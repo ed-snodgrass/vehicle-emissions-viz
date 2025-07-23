@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <title>Fuel Efficiency Data (2017)</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <link rel="stylesheet" href="./styles.css"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 
 <body>
@@ -283,7 +283,7 @@
           .text(`${d.AverageHighwayMPG}`)
       })
 
-    setAnnotation('EVs perform better in the City while gas & diesel are better on the Highway (not as good as electric)')
+    setAnnotation('EVs perform better in the City; Gas & Diesel better on the Highway (not as good as EVs)')
 
     const legend = svg.append('g')
       .attr('class', 'legend')
