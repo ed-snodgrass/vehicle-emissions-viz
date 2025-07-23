@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Fuel Efficiency Data (2017)</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+
+<body>
+<h2 id="scene-title">Average MPG by Fuel Type</h2>
+
+<div class="scene-buttons">
+  <button id="overview-button" onclick="drawOverview()">Overview</button>
+  <button id="scatterplot-button" onclick="drawScatterplot()">Fuel Type Scatter</button>
+  <button id="interactive-exploration-button" onclick="drawInteractiveExploration()">Explore Interactively</button>
+</div>
+
+<svg id="chart" width="800" height="500"></svg>
+
+<div class="filter-container" id="filters" style="display: none;">
+  <label>Make: <select id="makeSelect"></select></label>
+  <label>Fuel Type: <select id="fuelSelect"></select></label>
+  <label>Cylinders: <select id="cylSelect"></select></label>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+  let data = []
+
+  const svg = d3.select('#chart')
+
+  const margin = {top: 40, right: 150, bottom: 50, left: 60}
+  const width = +svg.attr('width') - margin.left - margin.right
+  const height = +svg.attr('height') - margin.top - margin.bottom
+
+  const chartGroup = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`)
+
+  d3.csv('./assets/cars2017.csv').then(raw => {
+    data = raw.map(d => ({
+      ...d,
+      EngineCylinders: +d.EngineCylinders,
+      AverageHighwayMPG: +d.AverageHighwayMPG,
+      AverageCityMPG: +d.AverageCityMPG
+    }))
+    drawOverview()
+    // drawScatterplot()
+    // drawInteractiveExploration()
+  })
+
+  function transitionScene(title, buttonId) {
+    const tooltip = d3.select("#tooltip")
+    tooltip.style('opacity', 0)
+
+    const crosshairGroup = chartGroup.append('g').style('display', 'none')
+    crosshairGroup.style('display', 'none')
+    d3.select('#scene-title').text(title)
+    d3.select('.legend').remove()
+    chartGroup.selectAll('*').remove()
+    d3.select('.scene-buttons').selectAll('button').attr('disabled', undefined)
+    d3.select(buttonId).attr('disabled', true)
+
+    if (buttonId === '#interactive-exploration-button') {
+      d3.select('#filters').style('display', 'block')
+    } else {
+      d3.select('#filters').style('display', 'none')
+    }
+  }
+
+  function setAnnotation(text) {
+    chartGroup.append('text')
+      .attr('class', 'annotation')
+      .attr('x', 10)
+      .attr('y', -15)
+      .text(text)
+  }
+
+  function drawOverview() {
+    transitionScene('Average MPG by Fuel Type', '#overview-button')
+    const avgByFuel = d3.rollups(
+      data,
+      v => d3.mean(v, d => (d.AverageCityMPG + d.AverageHighwayMPG) / 2),
+      d => d.Fuel
+    ).sort((a, b) => b[1] - a[1])
+
+    const xAxis = d3.scaleBand()
+      .domain(avgByFuel.map(d => d[0]))
+      .range([0, width])
+      .padding(0.3)
+
+    const yAxis = d3.scaleLinear()
+      .domain([0, d3.max(avgByFuel, d => d[1])])
+      .nice()
+      .range([height, 0])
+
+    chartGroup.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(xAxis))
+
+    chartGroup.append('g')
+      .call(d3.axisLeft(yAxis))
+
+    chartGroup.selectAll('.bar')
+      .data(avgByFuel)
+      .enter()
+      .append('rect')
+      .attr('class', 'bar')
+      .attr('x', d => xAxis(d[0]))
+      .attr('width', xAxis.bandwidth())
+      .attr('y', height)
+      .attr('height', height)
+      .transition()
+      .duration(1000)
+      .delay((d, i) => i * 200)
+      .attr('y', d => yAxis(d[1]))
+      .attr('height', d => height - yAxis(d[1]))
+
+    chartGroup.append("text")
+      .attr("class", "axis-label")
+      .attr("transform", `rotate(-90)`)
+      .attr("x", -height / 2)
+      .attr("y", -35)
+      .attr("text-anchor", "middle")
+      .text("Mean City and Highway MPG Average")
+
+    setAnnotation('Electric vehicles crush the competition in MPG')
+  }
+
+  function drawScatterplot() {
+    transitionScene('Fuel Type MPG Scatterplot', '#scatterplot-button')
+    const tooltip = d3.select("#tooltip")
+    const crosshairGroup = chartGroup.append('g').style('display', 'none')
+
+    crosshairGroup.append('line')
+      .attr('id', 'crosshair-x')
+      .attr('stroke', 'gray')
+      .attr('stroke-dasharray', '3,3')
+
+    crosshairGroup.append('line')
+      .attr('id', 'crosshair-y')
+      .attr('stroke', 'gray')
+      .attr('stroke-dasharray', '3,3')
+
+    const xLabel = crosshairGroup.append('text')
+      .attr('id', 'crosshair-x-label')
+      .attr('text-anchor', 'start')
+      .attr('fill', 'black')
+      .attr('font-size', '12px')
+
+    const yLabel = crosshairGroup.append('text')
+      .attr('id', 'crosshair-y-label')
+      .attr('text-anchor', 'start')
+      .attr('fill', 'black')
+      .attr('font-size', '12px')
+
+    const xAxis = d3.scaleLinear()
+      .domain([5, 150]).nice()
+      .range([0, height])
+
+    const yAxis = d3.scaleLinear()
+      .domain([5, 150]).nice()
+      .range([height, 0])
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10)
+      .domain([...new Set(data.map(d => d.Fuel))])
+
+    chartGroup.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(xAxis))
+
+    chartGroup.append('g').call(d3.axisLeft(yAxis))
+
+    chartGroup.append('text')
+      .attr('class', 'axis-label')
+      .attr('x', height / 2)
+      .attr('y', height + 40)
+      .attr('text-anchor', 'middle')
+      .text('Average City MPG')
+
+    chartGroup.append('text')
+      .attr('class', 'axis-label')
+      .attr('transform', `rotate(-90)`)
+      .attr('x', -height / 2)
+      .attr('y', -35)
+      .attr('text-anchor', 'middle')
+      .text('Average Highway MPG')
+
+
+    let selectedPoint = null
+
+    chartGroup.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'transparent')
+      .lower()
+      .on('click', () => {
+        tooltip.transition().duration(200).style('opacity', 0)
+        crosshairGroup.style('display', 'none')
+        selectedPoint = null
+      })
+
+    chartGroup.selectAll('circle').data(data).enter().append('circle')
+      .attr('cx', d => xAxis(d.AverageCityMPG))
+      .attr('cy', d => yAxis(d.AverageHighwayMPG))
+      .attr('r', d => 5)
+      .attr('fill', d => color(d.Fuel))
+      .attr('opacity', 0.5)
+      .on('mouseover', function (event, d) {
+        crosshairGroup.style('display', null)
+
+        tooltip.transition().duration(150).style('opacity', 1)
+        tooltip.html(`
+            <strong>${d.Make}</strong><br>${d.Fuel}<br>
+            City MPG: ${d.AverageCityMPG}<br>
+            Hwy MPG: ${d.AverageHighwayMPG}
+          `)
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px')
+
+        const cx = xAxis(d.AverageCityMPG)
+        const cy = yAxis(d.AverageHighwayMPG)
+
+        crosshairGroup.select('#crosshair-x')
+          .attr('x1', 0).attr('x2', cx)
+          .attr('y1', cy).attr('y2', cy)
+
+        crosshairGroup.select('#crosshair-y')
+          .attr('x1', cx).attr('x2', cx)
+          .attr('y1', height).attr('y2', cy)
+
+        xLabel
+          .attr('x', cx / 2)
+          .attr('y', cy - 6)
+          .text(`${d.AverageCityMPG}`)
+
+        yLabel
+          .attr('x', cx + 6)
+          .attr('y', cy + (height - cy) / 2)
+          .text(`${d.AverageHighwayMPG}`)
+      })
+      .on('mouseout', function () {
+        if (!selectedPoint) {
+          tooltip.transition().duration(200).style('opacity', 0)
+          crosshairGroup.style('display', 'none')
+        }
+      })
+      .on('click', function (event, d) {
+
+        selectedPoint = d
+        crosshairGroup.style('display', null)
+
+        tooltip.transition().duration(150).style('opacity', 1)
+        tooltip.html(`
+            <strong>${d.Make}</strong><br>${d.Fuel}<br>
+            City MPG: ${d.AverageCityMPG}<br>
+            Hwy MPG: ${d.AverageHighwayMPG}
+          `)
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px')
+
+        const cx = xAxis(d.AverageCityMPG)
+        const cy = yAxis(d.AverageHighwayMPG)
+
+        crosshairGroup.select('#crosshair-x')
+          .attr('x1', 0).attr('x2', cx)
+          .attr('y1', cy).attr('y2', cy)
+
+        crosshairGroup.select('#crosshair-y')
+          .attr('x1', cx).attr('x2', cx)
+          .attr('y1', height).attr('y2', cy)
+
+        xLabel
+          .attr('x', cx / 2)
+          .attr('y', cy - 6)
+          .text(`${d.AverageCityMPG}`)
+
+        yLabel
+          .attr('x', cx + 6)
+          .attr('y', cy + (height - cy) / 2)
+          .text(`${d.AverageHighwayMPG}`)
+      })
+
+    setAnnotation('EVs perform better in the City while gas & diesel are better on the Highway (not as good as electric)')
+
+    const legend = svg.append('g')
+      .attr('class', 'legend')
+      .attr('transform', `translate(${height + margin.left + 10}, ${margin.top + margin.top})`)
+    const fuelTypes = [...new Set(data.map(d => d.Fuel))]
+
+    fuelTypes.forEach((fuelType, i) => {
+      const legendRow = legend.append('g')
+        .attr('transform', `translate(40, ${i * 20})`)
+
+      legendRow.append('circle')
+        .attr('r', 6)
+        .attr('fill', color(fuelType))
+
+      legendRow.append('text')
+        .attr('x', 12)
+        .attr('y', 5)
+        .text(fuelType)
+        .style('font-size', '12px')
+    })
+  }
+
+  function drawInteractiveExploration() {
+    transitionScene('Interactive Exploration', '#interactive-exploration-button')
+
+    const makeOptions = ["All", ...new Set(data.map(d => d.Make).sort())]
+    const fuelTypeOptions = ["All", ...new Set(data.map(d => d.Fuel))]
+    const cylinderOptions = ["All", ...new Set(data.map(d => +d.EngineCylinders).sort((a, b) => a - b))]
+
+    updateDropdown("makeSelect", makeOptions)
+    updateDropdown("fuelSelect", fuelTypeOptions)
+    updateDropdown("cylSelect", cylinderOptions)
+
+    d3.select("#makeSelect").on("change", updateHistogram)
+    d3.select("#fuelSelect").on("change", updateHistogram)
+    d3.select("#cylSelect").on("change", updateHistogram)
+
+    updateHistogram()
+  }
+
+  function updateDropdown(id, values) {
+    const select = d3.select("#" + id)
+    select.selectAll("option").remove()
+    values.forEach(v => {
+      select.append("option").attr("value", v).text(v)
+    })
+  }
+
+  function updateHistogram() {
+    chartGroup.selectAll('*').remove()
+
+    const selectedMakeOption = d3.select("#makeSelect").property('value')
+    const selectedFuelTypeOption = d3.select("#fuelSelect").property('value')
+    const selectedCylinderOption = d3.select("#cylSelect").property('value')
+    let filtered = data
+
+    if (selectedMakeOption !== 'All') {
+      filtered = filtered.filter(d => d.Make === selectedMakeOption)
+    }
+    if (selectedFuelTypeOption !== 'All') {
+      filtered = filtered.filter(d => d.Fuel === selectedFuelTypeOption)
+    }
+    if (selectedCylinderOption !== 'All') {
+      filtered = filtered.filter(d => d.EngineCylinders.toString() === selectedCylinderOption.toString())
+    }
+
+    const xAxis = d3.scaleLinear()
+      .domain(d3.extent(filtered, d => d.AverageCityMPG)).nice()
+      .range([0, width])
+
+    const bins = d3.bin()
+      .value(d => d.AverageCityMPG)
+      .thresholds(15)(filtered)
+
+    const yAxis = d3.scaleLinear()
+      .domain([0, d3.max(bins, d => d.length)]).nice()
+      .range([height, 0])
+
+    chartGroup.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(xAxis))
+
+    chartGroup.append('g').call(d3.axisLeft(yAxis))
+
+    chartGroup.selectAll('rect').data(bins).enter().append('rect')
+      .attr('x', d => xAxis(d.x0))
+      .attr('width', d => {
+        if (bins.length === 1) {
+          return xAxis(d.x0)
+        }
+        if (d.x1 !== undefined && d.x0 !== undefined) {
+          return Math.max(0, xAxis(d.x1) - xAxis(d.x0) - 1)
+        } else {
+          return 0
+        }
+      })
+      .attr('y', d => yAxis(d.length))
+      .attr('height', d => height - yAxis(d.length))
+      .attr('fill', d3.schemeCategory10[0])
+      //TODO add the mouseover tooltip
+      .append('title')
+      .text(d => `${d.length} vehicles in the ${d.x0}-${d.x1} range`)
+
+    chartGroup.append('text')
+      .attr('class', 'axis-label')
+      .attr('x', width / 2)
+      .attr('y', height + 40)
+      .attr('text-anchor', 'middle')
+      .text('Average City MPG')
+
+    chartGroup.append('text')
+      .attr('class', 'axis-label')
+      .attr('transform', `rotate(-90)`)
+      .attr('x', -height / 2)
+      .attr('y', -35)
+      .attr('text-anchor', 'middle')
+      .text('Number of Vehicles')
+
+    // TODO Show content when all data is filtered out
+
+    setAnnotation('Most vehicles fall under the least efficient groups')
+  }
+
+</script>
+</body>
+</html>
