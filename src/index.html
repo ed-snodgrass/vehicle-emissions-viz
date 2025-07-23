@@ -19,6 +19,7 @@
 <svg id="chart" width="800" height="500"></svg>
 
 <div class="filter-container" id="filters" style="display: none;">
+  <h3>Use the dropdowns for further exploration</h4>
   <label>Make: <select id="makeSelect"></select></label>
   <label>Fuel Type: <select id="fuelSelect"></select></label>
   <label>Cylinders: <select id="cylSelect"></select></label>
@@ -333,6 +334,7 @@
 
   function updateHistogram() {
     chartGroup.selectAll('*').remove()
+    const tooltip = d3.select("#tooltip")
 
     const selectedMakeOption = d3.select("#makeSelect").property('value')
     const selectedFuelTypeOption = d3.select("#fuelSelect").property('value')
@@ -382,9 +384,15 @@
       .attr('y', d => yAxis(d.length))
       .attr('height', d => height - yAxis(d.length))
       .attr('fill', d3.schemeCategory10[0])
-      //TODO add the mouseover tooltip
-      .append('title')
-      .text(d => `${d.length} vehicles in the ${d.x0}-${d.x1} range`)
+      .on('mouseover', function (event, d) {
+        tooltip.transition().duration(150).style('opacity', 1)
+        tooltip.html(`${d.length} vehicles in the ${d.x0}-${d.x1} range`)
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px')
+      })
+      .on('mouseout', function () {
+        tooltip.transition().duration(200).style('opacity', 0)
+      })
 
     chartGroup.append('text')
       .attr('class', 'axis-label')
@@ -402,8 +410,7 @@
       .text('Number of Vehicles')
 
     // TODO Show content when all data is filtered out
-
-    setAnnotation('Most vehicles fall under the least efficient groups')
+    setAnnotation('Most vehicles are in least efficient ranges')
   }
 
 </script>
