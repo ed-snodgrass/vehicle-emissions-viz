@@ -1,6 +1,7 @@
 body {
     font-family: sans-serif;
     margin: 40px;
+    user-select: none;
 }
 
 svg {
@@ -9,10 +10,6 @@ svg {
 
 .bar {
     fill: #1F77B4FF;
-}
-
-.highlight {
-    fill: #FFA500FF;
 }
 
 .axis-label {
@@ -28,6 +25,9 @@ svg {
 
 .scene-buttons {
     margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .filter-container {
@@ -49,4 +49,14 @@ svg {
 
 select {
     margin-right: 10px;
+}
+
+button, select {
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+.warning-text {
+    fill: #8B0000FF;
+    font-size: 24px;
 }

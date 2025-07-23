@@ -8,25 +8,31 @@
 </head>
 
 <body>
-<h2 id="scene-title">Average MPG by Fuel Type</h2>
+<div style="width: 800px; height: 500px;">
 
-<div class="scene-buttons">
-  <button id="overview-button" onclick="drawOverview()">Overview</button>
-  <button id="scatterplot-button" onclick="drawScatterplot()">Fuel Type Scatter</button>
-  <button id="interactive-exploration-button" onclick="drawInteractiveExploration()">Explore Interactively</button>
+  <h2 id="scene-title">Average MPG by Fuel Type</h2>
+
+  <div class="scene-buttons">
+    <div>
+      <button id="overview-button" onclick="drawOverview()">Overview</button>
+      <button id="scatterplot-button" onclick="drawScatterplot()">Fuel Type Scatter</button>
+      <button id="interactive-exploration-button" onclick="drawInteractiveExploration()">Explore Interactively</button>
+    </div>
+    <span id="dropdown-suggestion" style="display: none">Use the filters below for further exploration</span>
+  </div>
+
+  <svg id="chart" width="800" height="500"></svg>
+
+  <div class="filter-container" id="filters" style="display: none;">
+    <label>Make: <select id="makeSelect"></select></label>
+    <label>Fuel Type: <select id="fuelSelect"></select></label>
+    <label>Cylinders: <select id="cylSelect"></select></label>
+<!--    <button id="reset-filters-button" onclick="">Reset</button> TODO allow user to reset filters-->
+  </div>
+
+  <div id="tooltip"></div>
+
 </div>
-
-<svg id="chart" width="800" height="500"></svg>
-
-<div class="filter-container" id="filters" style="display: none;">
-  <h3>Use the dropdowns for further exploration</h4>
-  <label>Make: <select id="makeSelect"></select></label>
-  <label>Fuel Type: <select id="fuelSelect"></select></label>
-  <label>Cylinders: <select id="cylSelect"></select></label>
-</div>
-
-<div id="tooltip"></div>
-
 <script>
   let data = []
 
@@ -65,8 +71,10 @@
 
     if (buttonId === '#interactive-exploration-button') {
       d3.select('#filters').style('display', 'block')
+      d3.select('#dropdown-suggestion').style('display', 'block')
     } else {
       d3.select('#filters').style('display', 'none')
+      d3.select('#dropdown-suggestion').style('display', 'none')
     }
   }
 
@@ -203,85 +211,12 @@
       })
 
     chartGroup.selectAll('circle').data(data).enter().append('circle')
+      .attr('class', 'scatterplot-point')
       .attr('cx', d => xAxis(d.AverageCityMPG))
       .attr('cy', d => yAxis(d.AverageHighwayMPG))
       .attr('r', d => 5)
       .attr('fill', d => color(d.Fuel))
       .attr('opacity', 0.5)
-      .on('mouseover', function (event, d) {
-        crosshairGroup.style('display', null)
-
-        tooltip.transition().duration(150).style('opacity', 1)
-        tooltip.html(`
-            <strong>${d.Make}</strong><br>${d.Fuel}<br>
-            City MPG: ${d.AverageCityMPG}<br>
-            Hwy MPG: ${d.AverageHighwayMPG}
-          `)
-          .style('left', (event.pageX + 12) + 'px')
-          .style('top', (event.pageY - 28) + 'px')
-
-        const cx = xAxis(d.AverageCityMPG)
-        const cy = yAxis(d.AverageHighwayMPG)
-
-        crosshairGroup.select('#crosshair-x')
-          .attr('x1', 0).attr('x2', cx)
-          .attr('y1', cy).attr('y2', cy)
-
-        crosshairGroup.select('#crosshair-y')
-          .attr('x1', cx).attr('x2', cx)
-          .attr('y1', height).attr('y2', cy)
-
-        xLabel
-          .attr('x', cx / 2)
-          .attr('y', cy - 6)
-          .text(`${d.AverageCityMPG}`)
-
-        yLabel
-          .attr('x', cx + 6)
-          .attr('y', cy + (height - cy) / 2)
-          .text(`${d.AverageHighwayMPG}`)
-      })
-      .on('mouseout', function () {
-        if (!selectedPoint) {
-          tooltip.transition().duration(200).style('opacity', 0)
-          crosshairGroup.style('display', 'none')
-        }
-      })
-      .on('click', function (event, d) {
-
-        selectedPoint = d
-        crosshairGroup.style('display', null)
-
-        tooltip.transition().duration(150).style('opacity', 1)
-        tooltip.html(`
-            <strong>${d.Make}</strong><br>${d.Fuel}<br>
-            City MPG: ${d.AverageCityMPG}<br>
-            Hwy MPG: ${d.AverageHighwayMPG}
-          `)
-          .style('left', (event.pageX + 12) + 'px')
-          .style('top', (event.pageY - 28) + 'px')
-
-        const cx = xAxis(d.AverageCityMPG)
-        const cy = yAxis(d.AverageHighwayMPG)
-
-        crosshairGroup.select('#crosshair-x')
-          .attr('x1', 0).attr('x2', cx)
-          .attr('y1', cy).attr('y2', cy)
-
-        crosshairGroup.select('#crosshair-y')
-          .attr('x1', cx).attr('x2', cx)
-          .attr('y1', height).attr('y2', cy)
-
-        xLabel
-          .attr('x', cx / 2)
-          .attr('y', cy - 6)
-          .text(`${d.AverageCityMPG}`)
-
-        yLabel
-          .attr('x', cx + 6)
-          .attr('y', cy + (height - cy) / 2)
-          .text(`${d.AverageHighwayMPG}`)
-      })
 
     setAnnotation('EVs perform better in the City; Gas & Diesel better on the Highway (not as good as EVs)')
 
@@ -359,6 +294,14 @@
       .value(d => d.AverageCityMPG)
       .thresholds(15)(filtered)
 
+    if (!bins || !bins[0]?.x0) {
+      chartGroup.append('text')
+        .attr('class', 'warning-text')
+        .attr('x', width/2 - 165)
+        .attr('y', height/2)
+        .text('No vehicles found, adjust the filters')
+    }
+
     const yAxis = d3.scaleLinear()
       .domain([0, d3.max(bins, d => d.length)]).nice()
       .range([height, 0])
@@ -409,10 +352,8 @@
       .attr('text-anchor', 'middle')
       .text('Number of Vehicles')
 
-    // TODO Show content when all data is filtered out
-    setAnnotation('Most vehicles are in least efficient ranges')
+    setAnnotation('Non-EV vehicles are typically in the least efficient ranges')
   }
-
 </script>
 </body>
 </html>
