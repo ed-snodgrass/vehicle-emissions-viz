@@ -9,6 +9,7 @@
 </head>
 
 <body>
+<h1>Fuel Efficiency Data (2017)</h1>
 <div style="width: 800px; height: 500px;">
   <h2 id="scene-title">Average MPG by Fuel Type</h2>
     <div id="nav-buttons" class="nav-container">
@@ -73,6 +74,7 @@
     switch (index) {
       case 0:
         d3.select('#scene-title').text('Average MPG by Fuel Type')
+        d3.select('#filters').style('display', 'none')
         d3.select(`#prev-btn`).attr('disabled', true)
         d3.select(`#next-btn`).attr('disabled', undefined)
         drawOverview()
@@ -94,11 +96,11 @@
     }
   }
 
-  function setAnnotation(text) {
+  function setAnnotation(text, x = 10, y = -15) {
     chartGroup.append('text')
       .attr('class', 'annotation')
-      .attr('x', 10)
-      .attr('y', -15)
+      .attr('x', x)
+      .attr('y', y)
       .text(text)
   }
 
@@ -217,7 +219,6 @@
       .attr('text-anchor', 'middle')
       .text('Average Highway MPG')
 
-
     let selectedPoint = null
 
     chartGroup.append('rect')
@@ -312,8 +313,8 @@
           .attr('y', cy + (height - cy) / 2)
           .text(`${d.AverageHighwayMPG} HWY`)
       })
-    setAnnotation('EVs perform better in the City; Gas & Diesel better on the Highway (not as good as EVs)')
-
+    setAnnotation('EVs tend to perform better in the City', 75, 75)
+    setAnnotation('Gas & Diesel do better on the Highway', 100, 350)
     const legend = svg.append('g')
       .attr('class', 'legend')
       .attr('transform', `translate(${height + margin.left + 10}, ${margin.top + margin.top})`)
@@ -336,11 +337,10 @@
     })
 
     // legend.append('text')
-    //   .attr('x', 33)
-    //   .attr('y', 70)
+    //   .attr('x', 150)
+    //   .attr('y', 35)
     //   .text('Click to filter')
     //   .style('font-size', '14px')
-    // TODO make it actually filter
   }
 
   function resetFilters() {
