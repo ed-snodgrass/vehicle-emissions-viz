@@ -10,17 +10,14 @@
 
 <body>
 <div style="width: 800px; height: 500px;">
-
   <h2 id="scene-title">Average MPG by Fuel Type</h2>
-
-  <div class="scene-buttons">
-    <div>
-      <button id="overview-button" onclick="drawOverview()">Overview</button>
-      <button id="scatterplot-button" onclick="drawScatterplot()">Fuel Type Scatter</button>
-      <button id="interactive-exploration-button" onclick="drawInteractiveExploration()">Explore Interactively</button>
+    <div id="nav-buttons" class="nav-container">
+      <button id="prev-btn" class="nav-btn" onclick="drawPrevious()">Prev</button>
+      <button id="overview-button" class="nav-btn scene-btn" data-scene="0" onclick="transitionScene(0)">1</button>
+      <button id="scatterplot-button" class="nav-btn scene-btn" data-scene="1" onclick="transitionScene(1)">2</button>
+      <button id="interactive-exploration-button" class="nav-btn scene-btn" data-scene="2" onclick="transitionScene(2)">3</button>
+      <button id="next-btn" class="nav-btn" onclick="drawNext()">Next</button>
     </div>
-    <span id="dropdown-suggestion" style="display: none">Use the filters below for further exploration</span>
-  </div>
 
   <svg id="chart" width="800" height="500"></svg>
 
@@ -28,7 +25,7 @@
     <label>Make: <select id="makeSelect"></select></label>
     <label>Fuel Type: <select id="fuelSelect"></select></label>
     <label>Cylinders: <select id="cylSelect"></select></label>
-<!--    <button id="reset-filters-button" onclick="">Reset</button> TODO allow user to reset filters-->
+    <button id="reset-filters-button" onclick="resetFilters()">Reset</button>
   </div>
 
   <div id="tooltip"></div>
@@ -36,6 +33,7 @@
 </div>
 <script>
   let data = []
+  let currentScene = 0;
 
   const svg = d3.select('#chart')
 
@@ -53,29 +51,46 @@
       AverageHighwayMPG: +d.AverageHighwayMPG,
       AverageCityMPG: +d.AverageCityMPG
     }))
-    drawOverview()
-    // drawScatterplot()
-    // drawInteractiveExploration()
+    transitionScene(currentScene)
   })
 
-  function transitionScene(title, buttonId) {
+  function transitionScene(index) {
+    currentScene = index
     const tooltip = d3.select("#tooltip")
     tooltip.style('opacity', 0)
 
+    d3.selectAll(".scene-btn").classed("active", false);
+    d3.select(`.scene-btn[data-scene="${index}"]`).classed("active", true);
+
     const crosshairGroup = chartGroup.append('g').style('display', 'none')
     crosshairGroup.style('display', 'none')
-    d3.select('#scene-title').text(title)
+
     d3.select('.legend').remove()
     chartGroup.selectAll('*').remove()
-    d3.select('.scene-buttons').selectAll('button').attr('disabled', undefined)
-    d3.select(buttonId).attr('disabled', true)
+    d3.select('#nav-buttons').selectAll('button').attr('disabled', undefined)
+    d3.select(`[data-scene-${index}`).attr('disabled', true)
 
-    if (buttonId === '#interactive-exploration-button') {
-      d3.select('#filters').style('display', 'block')
-      d3.select('#dropdown-suggestion').style('display', 'block')
-    } else {
-      d3.select('#filters').style('display', 'none')
-      d3.select('#dropdown-suggestion').style('display', 'none')
+    switch (index) {
+      case 0:
+        d3.select('#scene-title').text('Average MPG by Fuel Type')
+        d3.select(`#prev-btn`).attr('disabled', true)
+        d3.select(`#next-btn`).attr('disabled', undefined)
+        drawOverview()
+        break;
+      case 1:
+        d3.select('#scene-title').text('Fuel Type MPG Scatterplot')
+        d3.select('#filters').style('display', 'none')
+        d3.select(`#prev-btn`).attr('disabled', undefined)
+        d3.select(`#next-btn`).attr('disabled', undefined)
+        drawScatterplot()
+        break;
+      case 2:
+        d3.select('#scene-title').text('Interactive Exploration')
+        d3.select('#filters').style('display', 'block')
+        d3.select(`#prev-btn`).attr('disabled', undefined)
+        d3.select(`#next-btn`).attr('disabled', true)
+        drawInteractiveExploration()
+        break;
     }
   }
 
@@ -87,8 +102,14 @@
       .text(text)
   }
 
+  function drawPrevious() {
+    transitionScene(--currentScene)
+  }
+  function drawNext() {
+    transitionScene(++currentScene)
+  }
+
   function drawOverview() {
-    transitionScene('Average MPG by Fuel Type', '#overview-button')
     const avgByFuel = d3.rollups(
       data,
       v => d3.mean(v, d => (d.AverageCityMPG + d.AverageHighwayMPG) / 2),
@@ -139,7 +160,6 @@
   }
 
   function drawScatterplot() {
-    transitionScene('Fuel Type MPG Scatterplot', '#scatterplot-button')
     const tooltip = d3.select("#tooltip")
     const crosshairGroup = chartGroup.append('g').style('display', 'none')
 
@@ -218,7 +238,80 @@
       .attr('r', d => 5)
       .attr('fill', d => color(d.Fuel))
       .attr('opacity', 0.5)
+      .on('mouseover', function (event, d) {
+        crosshairGroup.style('display', null)
 
+        tooltip.transition().duration(150).style('opacity', 1)
+        tooltip.html(`
+            <strong>${d.Make}</strong><br>${d.Fuel}<br>
+            City MPG: ${d.AverageCityMPG}<br>
+            Hwy MPG: ${d.AverageHighwayMPG}
+          `)
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px')
+
+        const cx = xAxis(d.AverageCityMPG)
+        const cy = yAxis(d.AverageHighwayMPG)
+
+        crosshairGroup.select('#crosshair-x')
+          .attr('x1', 0).attr('x2', cx)
+          .attr('y1', cy).attr('y2', cy)
+
+        crosshairGroup.select('#crosshair-y')
+          .attr('x1', cx).attr('x2', cx)
+          .attr('y1', height).attr('y2', cy)
+
+        xLabel
+          .attr('x', cx / 2)
+          .attr('y', cy - 6)
+          .text(`${d.AverageCityMPG} City`)
+
+        yLabel
+          .attr('x', cx + 6)
+          .attr('y', cy + (height - cy) / 2)
+          .text(`${d.AverageHighwayMPG} HWY`)
+      })
+      .on('mouseout', function () {
+        if (!selectedPoint) {
+          tooltip.transition().duration(200).style('opacity', 0)
+          crosshairGroup.style('display', 'none')
+        }
+      })
+      .on('click', function (event, d) {
+
+        selectedPoint = d
+        crosshairGroup.style('display', null)
+
+        tooltip.transition().duration(150).style('opacity', 1)
+        tooltip.html(`
+            <strong>${d.Make}</strong><br>${d.Fuel}<br>
+            City MPG: ${d.AverageCityMPG}<br>
+            Hwy MPG: ${d.AverageHighwayMPG}
+          `)
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px')
+
+        const cx = xAxis(d.AverageCityMPG)
+        const cy = yAxis(d.AverageHighwayMPG)
+
+        crosshairGroup.select('#crosshair-x')
+          .attr('x1', 0).attr('x2', cx)
+          .attr('y1', cy).attr('y2', cy)
+
+        crosshairGroup.select('#crosshair-y')
+          .attr('x1', cx).attr('x2', cx)
+          .attr('y1', height).attr('y2', cy)
+
+        xLabel
+          .attr('x', cx / 2)
+          .attr('y', cy - 6)
+          .text(`${d.AverageCityMPG} City`)
+
+        yLabel
+          .attr('x', cx + 6)
+          .attr('y', cy + (height - cy) / 2)
+          .text(`${d.AverageHighwayMPG} HWY`)
+      })
     setAnnotation('EVs perform better in the City; Gas & Diesel better on the Highway (not as good as EVs)')
 
     const legend = svg.append('g')
@@ -231,20 +324,30 @@
         .attr('transform', `translate(40, ${i * 20})`)
 
       legendRow.append('circle')
-        .attr('r', 6)
+        .attr('r', 8)
         .attr('fill', color(fuelType))
 
       legendRow.append('text')
         .attr('x', 12)
         .attr('y', 5)
         .text(fuelType)
-        .style('font-size', '12px')
+        .style('font-size', '14px')
+
     })
+
+    // legend.append('text')
+    //   .attr('x', 33)
+    //   .attr('y', 70)
+    //   .text('Click to filter')
+    //   .style('font-size', '14px')
+    // TODO make it actually filter
+  }
+
+  function resetFilters() {
+    drawInteractiveExploration()
   }
 
   function drawInteractiveExploration() {
-    transitionScene('Interactive Exploration', '#interactive-exploration-button')
-
     const makeOptions = ["All", ...new Set(data.map(d => d.Make).sort())]
     const fuelTypeOptions = ["All", ...new Set(data.map(d => d.Fuel))]
     const cylinderOptions = ["All", ...new Set(data.map(d => +d.EngineCylinders).sort((a, b) => a - b))]
@@ -344,6 +447,7 @@
       .attr('y', height + 40)
       .attr('text-anchor', 'middle')
       .text('Average City MPG')
+    // TODO allow user to switch between Highway and City
 
     chartGroup.append('text')
       .attr('class', 'axis-label')
