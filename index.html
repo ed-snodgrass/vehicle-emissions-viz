@@ -12,13 +12,15 @@
 <h1>Fuel Efficiency Data (2017)</h1>
 <div style="width: 800px; height: 500px;">
   <h2 id="scene-title">Average MPG by Fuel Type</h2>
-    <div id="nav-buttons" class="nav-container">
-      <button id="prev-btn" class="nav-btn" onclick="drawPrevious()">Prev</button>
-      <button id="overview-button" class="nav-btn scene-btn" data-scene="0" onclick="transitionScene(0)">1</button>
-      <button id="scatterplot-button" class="nav-btn scene-btn" data-scene="1" onclick="transitionScene(1)">2</button>
-      <button id="interactive-exploration-button" class="nav-btn scene-btn" data-scene="2" onclick="transitionScene(2)">3</button>
-      <button id="next-btn" class="nav-btn" onclick="drawNext()">Next</button>
-    </div>
+  <div id="nav-buttons" class="nav-container">
+    <button id="prev-btn" class="nav-btn" onclick="drawPrevious()">Prev</button>
+    <button id="overview-button" class="nav-btn scene-btn" data-scene="0" onclick="transitionScene(0)">1</button>
+    <button id="scatterplot-button" class="nav-btn scene-btn" data-scene="1" onclick="transitionScene(1)">2</button>
+    <button id="interactive-exploration-button" class="nav-btn scene-btn" data-scene="2" onclick="transitionScene(2)">
+      3
+    </button>
+    <button id="next-btn" class="nav-btn" onclick="drawNext()">Next</button>
+  </div>
 
   <svg id="chart" width="800" height="500"></svg>
 
@@ -30,7 +32,14 @@
   </div>
 
   <div id="tooltip"></div>
-
+  <div>
+    <p>
+      <i>For more information on MPGs for electric vehicles, see:</i>
+      <a rel="external" target="_blank" href="https://en.wikipedia.org/wiki/Miles_per_gallon_gasoline_equivalent">
+        Miles per gallon gasoline equivalent
+      </a>
+    </p>
+  </div>
 </div>
 <script>
   let data = []
@@ -107,6 +116,7 @@
   function drawPrevious() {
     transitionScene(--currentScene)
   }
+
   function drawNext() {
     transitionScene(++currentScene)
   }
@@ -158,7 +168,7 @@
       .attr("text-anchor", "middle")
       .text("Mean City and Highway MPG Average")
 
-    setAnnotation('Electric vehicles crush the competition in MPG')
+    setAnnotation('Electric vehicles crush the competition in MPG', 200, 45)
   }
 
   function drawScatterplot() {
@@ -401,8 +411,8 @@
     if (!bins || !bins[0]?.x0) {
       chartGroup.append('text')
         .attr('class', 'warning-text')
-        .attr('x', width/2 - 165)
-        .attr('y', height/2)
+        .attr('x', width / 2 - 165)
+        .attr('y', height / 2)
         .text('No vehicles found, adjust the filters')
     }
 
