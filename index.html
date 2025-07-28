@@ -15,11 +15,9 @@
   <h2 id="scene-title">Average MPG by Fuel Type</h2>
   <div id="nav-buttons" class="nav-container">
     <button id="prev-btn" class="nav-btn" onclick="drawPrevious()">Prev</button>
-    <button id="overview-button" class="nav-btn scene-btn" data-scene="0" onclick="transitionScene(0)">1</button>
-    <button id="scatterplot-button" class="nav-btn scene-btn" data-scene="1" onclick="transitionScene(1)">2</button>
-    <button id="interactive-exploration-button" class="nav-btn scene-btn" data-scene="2" onclick="transitionScene(2)">
-      3
-    </button>
+    <button class="nav-btn scene-btn" data-scene="0" onclick="transitionScene(0)">1</button>
+    <button class="nav-btn scene-btn" data-scene="1" onclick="transitionScene(1)">2</button>
+    <button class="nav-btn scene-btn" data-scene="2" onclick="transitionScene(2)">3</button>
     <button id="next-btn" class="nav-btn" onclick="drawNext()">Next</button>
   </div>
 
@@ -35,7 +33,7 @@
   <div id="tooltip"></div>
   <div>
     <p>
-      <i>For more information on MPGs for electric vehicles, see:</i>
+      <i>For more information on MPG calculation for electric vehicles, see:</i>
       <a rel="external" target="_blank" href="https://en.wikipedia.org/wiki/Miles_per_gallon_gasoline_equivalent">
         Miles per gallon gasoline equivalent
       </a>

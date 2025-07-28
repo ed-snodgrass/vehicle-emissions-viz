@@ -1,6 +1,6 @@
 let data = []
-let currentScene = 0;
-// let currentScene = 1;
+let currentScene = 0
+// TODO Add prompt showing hover that user can dismiss. "Got It".
 
 const svg = d3.select('#chart')
 
@@ -23,11 +23,11 @@ d3.csv('./assets/cars2017.csv').then(raw => {
 
 function transitionScene(index) {
   currentScene = index
-  const tooltip = d3.select("#tooltip")
+  const tooltip = d3.select('#tooltip')
   tooltip.style('opacity', 0)
 
-  d3.selectAll(".scene-btn").classed("active", false);
-  d3.select(`.scene-btn[data-scene="${index}"]`).classed("active", true);
+  d3.selectAll('.scene-btn').classed('active', false)
+  d3.select(`.scene-btn[data-scene="${index}"]`).classed('active', true)
 
   const crosshairGroup = chartGroup.append('g').style('display', 'none')
   crosshairGroup.style('display', 'none')
@@ -39,26 +39,27 @@ function transitionScene(index) {
 
   switch (index) {
     case 0:
-      d3.select('#scene-title').text('Average MPG by Fuel Type')
+      d3.select('#scene-title').text('City vs Highway MPG by Fuel Type')
       d3.select('#filters').style('display', 'none')
       d3.select(`#prev-btn`).attr('disabled', true)
       d3.select(`#next-btn`).attr('disabled', undefined)
+      // drawOverviewByFuelType()
       drawOverview()
-      break;
+      break
     case 1:
       d3.select('#scene-title').text('Fuel Type MPG Scatterplot')
       d3.select('#filters').style('display', 'none')
       d3.select(`#prev-btn`).attr('disabled', undefined)
       d3.select(`#next-btn`).attr('disabled', undefined)
       drawScatterplot()
-      break;
+      break
     case 2:
       d3.select('#scene-title').text('Interactive Exploration')
       d3.select('#filters').style('display', 'block')
       d3.select(`#prev-btn`).attr('disabled', undefined)
       d3.select(`#next-btn`).attr('disabled', true)
       drawInteractiveExploration()
-      break;
+      break
   }
 }
 
@@ -70,6 +71,12 @@ function setAnnotation(text, x = 10, y = -15) {
     .text(text)
 }
 
+function mouseMove(tooltip, event) {
+  tooltip
+    .style('left', (event.pageX + 12) + 'px')
+    .style('top', (event.pageY - 28) + 'px')
+}
+
 function drawPrevious() {
   transitionScene(--currentScene)
 }
@@ -79,19 +86,22 @@ function drawNext() {
 }
 
 function drawOverview() {
-  const avgByFuel = d3.rollups(
-    data,
-    v => d3.mean(v, d => (d.AverageCityMPG + d.AverageHighwayMPG) / 2),
-    d => d.Fuel
-  ).sort((a, b) => b[1] - a[1])
+  const tooltip = d3.select('#tooltip')
+
+  const avgData = d3.groups(data, d => d.Fuel)
+    .map(([fuel, records]) => ({
+      Fuel: fuel,
+      MeanMPG: d3.mean(records, d => (+d.AverageCityMPG + +d.AverageHighwayMPG) / 2)
+    }))
+    .sort((a, b) => d3.descending(a.MeanMPG, b.MeanMPG))
 
   const xAxis = d3.scaleBand()
-    .domain(avgByFuel.map(d => d[0]))
+    .domain(avgData.map(d => d.Fuel))
     .range([0, width])
     .padding(0.3)
 
   const yAxis = d3.scaleLinear()
-    .domain([0, d3.max(avgByFuel, d => d[1])])
+    .domain([0, d3.max(avgData, d => d.MeanMPG)])
     .nice()
     .range([height, 0])
 
@@ -103,33 +113,48 @@ function drawOverview() {
     .call(d3.axisLeft(yAxis))
 
   chartGroup.selectAll('.bar')
-    .data(avgByFuel)
+    .data(avgData)
     .enter()
     .append('rect')
     .attr('class', 'bar')
-    .attr('x', d => xAxis(d[0]))
+    .style('cursor', 'pointer')
+    .attr('x', d => xAxis(d.Fuel))
     .attr('width', xAxis.bandwidth())
-    .attr('y', height)
-    .attr('height', height)
-    .transition()
-    .duration(1000)
-    .delay((d, i) => i * 200)
-    .attr('y', d => yAxis(d[1]))
-    .attr('height', d => height - yAxis(d[1]))
+    .attr('y', d => yAxis(d.MeanMPG))
+    .attr('height', d => height - yAxis(d.MeanMPG))
+    .on('mouseover', function (event, d) {
+      tooltip.transition().duration(150).style('opacity', 1)
+      tooltip.html(`
+        <strong>${d.Fuel}</strong><br>
+        Avg MPG: ${d.MeanMPG.toFixed(1)}
+      `)
+      tooltip
+        .html(`<strong>${d.Fuel}</strong><br>Avg MPG: ${d.MeanMPG.toFixed(1)}`)
+      d3.select(this)
+        .attr('stroke', '#000')
+        .attr('stroke-width', 1.5)
+    })
+    .on('mousemove', function (event) {
+      mouseMove(tooltip, event)
+    })
+    .on('mouseout', function () {
+      tooltip.transition().duration(200).style('opacity', 0)
+      d3.select(this).attr('stroke', null)
+    })
 
-  chartGroup.append("text")
-    .attr("class", "axis-label")
-    .attr("transform", `rotate(-90)`)
-    .attr("x", -height / 2)
-    .attr("y", -35)
-    .attr("text-anchor", "middle")
-    .text("Mean City and Highway MPG Average")
+  chartGroup.append('text')
+    .attr('class', 'axis-label')
+    .attr('transform', `rotate(-90)`)
+    .attr('x', -height / 2)
+    .attr('y', -35)
+    .attr('text-anchor', 'middle')
+    .text('Mean City and Highway MPG Average')
 
   setAnnotation('Electric vehicles crush the competition in MPG', 200, 45)
 }
 
 function drawScatterplot() {
-  const tooltip = d3.select("#tooltip")
+  const tooltip = d3.select('#tooltip')
   const crosshairGroup = chartGroup.append('g').style('display', 'none')
 
   crosshairGroup.append('line')
@@ -206,6 +231,7 @@ function drawScatterplot() {
     .attr('r', d => 5)
     .attr('fill', d => color(d.Fuel))
     .attr('opacity', 0.5)
+    .style('cursor', 'pointer')
     .on('mouseover', function (event, d) {
       crosshairGroup.style('display', null)
 
@@ -215,8 +241,6 @@ function drawScatterplot() {
             City MPG: ${d.AverageCityMPG}<br>
             Hwy MPG: ${d.AverageHighwayMPG}
           `)
-        .style('left', (event.pageX + 12) + 'px')
-        .style('top', (event.pageY - 28) + 'px')
 
       const cx = xAxis(d.AverageCityMPG)
       const cy = yAxis(d.AverageHighwayMPG)
@@ -238,6 +262,10 @@ function drawScatterplot() {
         .attr('x', cx + 6)
         .attr('y', cy + (height - cy) / 2)
         .text(`${d.AverageHighwayMPG} HWY`)
+    })
+
+    .on('mousemove', function (event) {
+      mouseMove(tooltip, event)
     })
     .on('mouseout', function () {
       if (!selectedPoint) {
@@ -315,36 +343,36 @@ function resetFilters() {
 }
 
 function drawInteractiveExploration() {
-  const makeOptions = ["All", ...new Set(data.map(d => d.Make).sort())]
-  const fuelTypeOptions = ["All", ...new Set(data.map(d => d.Fuel))]
-  const cylinderOptions = ["All", ...new Set(data.map(d => +d.EngineCylinders).sort((a, b) => a - b))]
+  const makeOptions = ['All', ...new Set(data.map(d => d.Make).sort())]
+  const fuelTypeOptions = ['All', ...new Set(data.map(d => d.Fuel))]
+  const cylinderOptions = ['All', ...new Set(data.map(d => +d.EngineCylinders).sort((a, b) => a - b))]
 
-  updateDropdown("makeSelect", makeOptions)
-  updateDropdown("fuelSelect", fuelTypeOptions)
-  updateDropdown("cylSelect", cylinderOptions)
+  updateDropdown('makeSelect', makeOptions)
+  updateDropdown('fuelSelect', fuelTypeOptions)
+  updateDropdown('cylSelect', cylinderOptions)
 
-  d3.select("#makeSelect").on("change", updateHistogram)
-  d3.select("#fuelSelect").on("change", updateHistogram)
-  d3.select("#cylSelect").on("change", updateHistogram)
+  d3.select('#makeSelect').on('change', updateHistogram)
+  d3.select('#fuelSelect').on('change', updateHistogram)
+  d3.select('#cylSelect').on('change', updateHistogram)
 
   updateHistogram()
 }
 
 function updateDropdown(id, values) {
-  const select = d3.select("#" + id)
-  select.selectAll("option").remove()
+  const select = d3.select('#' + id)
+  select.selectAll('option').remove()
   values.forEach(v => {
-    select.append("option").attr("value", v).text(v)
+    select.append('option').attr('value', v).text(v)
   })
 }
 
 function updateHistogram() {
   chartGroup.selectAll('*').remove()
-  const tooltip = d3.select("#tooltip")
+  const tooltip = d3.select('#tooltip')
 
-  const selectedMakeOption = d3.select("#makeSelect").property('value')
-  const selectedFuelTypeOption = d3.select("#fuelSelect").property('value')
-  const selectedCylinderOption = d3.select("#cylSelect").property('value')
+  const selectedMakeOption = d3.select('#makeSelect').property('value')
+  const selectedFuelTypeOption = d3.select('#fuelSelect').property('value')
+  const selectedCylinderOption = d3.select('#cylSelect').property('value')
   let filtered = data
 
   if (selectedMakeOption !== 'All') {
@@ -398,11 +426,15 @@ function updateHistogram() {
     .attr('y', d => yAxis(d.length))
     .attr('height', d => height - yAxis(d.length))
     .attr('fill', d3.schemeCategory10[0])
+    .style('cursor', 'pointer')
     .on('mouseover', function (event, d) {
       tooltip.transition().duration(150).style('opacity', 1)
       tooltip.html(`${d.length} vehicles in the ${d.x0}-${d.x1} range`)
         .style('left', (event.pageX + 12) + 'px')
         .style('top', (event.pageY - 28) + 'px')
+    })
+    .on('mousemove', function (event) {
+      mouseMove(tooltip, event)
     })
     .on('mouseout', function () {
       tooltip.transition().duration(200).style('opacity', 0)
