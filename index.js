@@ -39,7 +39,7 @@ function transitionScene(index) {
 
   switch (index) {
     case 0:
-      d3.select('#scene-title').text('City vs Highway MPG by Fuel Type')
+      d3.select('#scene-title').text('Mean MPG Average by Fuel Type')
       d3.select('#filters').style('display', 'none')
       d3.select(`#prev-btn`).attr('disabled', true)
       d3.select(`#next-btn`).attr('disabled', undefined)
@@ -47,14 +47,14 @@ function transitionScene(index) {
       drawOverview()
       break
     case 1:
-      d3.select('#scene-title').text('Fuel Type MPG Scatterplot')
+      d3.select('#scene-title').text('Fuel Type MPG Comparison')
       d3.select('#filters').style('display', 'none')
       d3.select(`#prev-btn`).attr('disabled', undefined)
       d3.select(`#next-btn`).attr('disabled', undefined)
       drawScatterplot()
       break
     case 2:
-      d3.select('#scene-title').text('Interactive Exploration')
+      d3.select('#scene-title').text('Exploration by Make')
       d3.select('#filters').style('display', 'block')
       d3.select(`#prev-btn`).attr('disabled', undefined)
       d3.select(`#next-btn`).attr('disabled', true)
@@ -228,7 +228,7 @@ function drawScatterplot() {
     .attr('class', 'scatterplot-point')
     .attr('cx', d => xAxis(d.AverageCityMPG))
     .attr('cy', d => yAxis(d.AverageHighwayMPG))
-    .attr('r', d => 5)
+    .attr('r', () => 5)
     .attr('fill', d => color(d.Fuel))
     .attr('opacity', 0.5)
     .style('cursor', 'pointer')
@@ -386,11 +386,11 @@ function updateHistogram() {
   }
 
   const xAxis = d3.scaleLinear()
-    .domain(d3.extent(filtered, d => d.AverageCityMPG)).nice()
+    .domain(d3.extent(filtered, d => (+d.AverageCityMPG + +d.AverageHighwayMPG) / 2)).nice()
     .range([0, width])
 
   const bins = d3.bin()
-    .value(d => d.AverageCityMPG)
+    .value(d => (+d.AverageCityMPG + +d.AverageHighwayMPG) / 2)
     .thresholds(15)(filtered)
 
   if (!bins || !bins[0]?.x0) {
@@ -445,8 +445,7 @@ function updateHistogram() {
     .attr('x', width / 2)
     .attr('y', height + 40)
     .attr('text-anchor', 'middle')
-    .text('Average City MPG')
-  // TODO allow user to switch between Highway and City
+    .text('Mean of the Average MPG (Ranges)')
 
   chartGroup.append('text')
     .attr('class', 'axis-label')
@@ -456,5 +455,5 @@ function updateHistogram() {
     .attr('text-anchor', 'middle')
     .text('Number of Vehicles')
 
-  setAnnotation('Non-EV vehicles are typically in the least efficient ranges')
+  setAnnotation('How does your favorite vehicle make stack up?')
 }
