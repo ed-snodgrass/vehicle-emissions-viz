@@ -26,8 +26,8 @@ function transitionScene(index) {
   const tooltip = d3.select('#tooltip')
   tooltip.style('opacity', 0)
 
-  d3.selectAll('.scene-btn').classed('active', false)
-  d3.select(`.scene-btn[data-scene="${index}"]`).classed('active', true)
+  d3.selectAll('.slide-number').classed('active', false)
+  d3.select(`.slide-number[data-scene="${index}"]`).classed('active', true)
 
   const crosshairGroup = chartGroup.append('g').style('display', 'none')
   crosshairGroup.style('display', 'none')
