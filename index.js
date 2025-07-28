@@ -105,6 +105,9 @@ function drawOverview() {
     .nice()
     .range([height, 0])
 
+  const color = d3.scaleOrdinal(d3.schemeCategory10)
+    .domain([...new Set(data.map(d => d.Fuel))])
+
   chartGroup.append('g')
     .attr('transform', `translate(0,${height})`)
     .call(d3.axisBottom(xAxis))
@@ -117,11 +120,11 @@ function drawOverview() {
     .enter()
     .append('rect')
     .attr('class', 'bar')
-    .style('cursor', 'pointer')
     .attr('x', d => xAxis(d.Fuel))
     .attr('width', xAxis.bandwidth())
     .attr('y', d => yAxis(d.MeanMPG))
     .attr('height', d => height - yAxis(d.MeanMPG))
+    .attr('fill', d => color(d.Fuel))
     .on('mouseover', function (event, d) {
       tooltip.transition().duration(150).style('opacity', 1)
       tooltip.html(`
@@ -231,7 +234,6 @@ function drawScatterplot() {
     .attr('r', () => 5)
     .attr('fill', d => color(d.Fuel))
     .attr('opacity', 0.5)
-    .style('cursor', 'pointer')
     .on('mouseover', function (event, d) {
       crosshairGroup.style('display', null)
 
@@ -262,6 +264,10 @@ function drawScatterplot() {
         .attr('x', cx + 6)
         .attr('y', cy + (height - cy) / 2)
         .text(`${d.AverageHighwayMPG} HWY`)
+
+      d3.select(this)
+        .attr('stroke', '#000')
+        .attr('stroke-width', 1.5)
     })
 
     .on('mousemove', function (event) {
@@ -271,42 +277,8 @@ function drawScatterplot() {
       if (!selectedPoint) {
         tooltip.transition().duration(200).style('opacity', 0)
         crosshairGroup.style('display', 'none')
+        d3.select(this).attr('stroke', null)
       }
-    })
-    .on('click', function (event, d) {
-
-      selectedPoint = d
-      crosshairGroup.style('display', null)
-
-      tooltip.transition().duration(150).style('opacity', 1)
-      tooltip.html(`
-            <strong>${d.Make}</strong><br>${d.Fuel}<br>
-            City MPG: ${d.AverageCityMPG}<br>
-            Hwy MPG: ${d.AverageHighwayMPG}
-          `)
-        .style('left', (event.pageX + 12) + 'px')
-        .style('top', (event.pageY - 28) + 'px')
-
-      const cx = xAxis(d.AverageCityMPG)
-      const cy = yAxis(d.AverageHighwayMPG)
-
-      crosshairGroup.select('#crosshair-x')
-        .attr('x1', 0).attr('x2', cx)
-        .attr('y1', cy).attr('y2', cy)
-
-      crosshairGroup.select('#crosshair-y')
-        .attr('x1', cx).attr('x2', cx)
-        .attr('y1', height).attr('y2', cy)
-
-      xLabel
-        .attr('x', cx / 2)
-        .attr('y', cy - 6)
-        .text(`${d.AverageCityMPG} City`)
-
-      yLabel
-        .attr('x', cx + 6)
-        .attr('y', cy + (height - cy) / 2)
-        .text(`${d.AverageHighwayMPG} HWY`)
     })
   setAnnotation('EVs tend to perform better in the City', 75, 75)
   setAnnotation('Gas & Diesel do better on the Highway', 100, 350)
@@ -426,18 +398,22 @@ function updateHistogram() {
     .attr('y', d => yAxis(d.length))
     .attr('height', d => height - yAxis(d.length))
     .attr('fill', d3.schemeCategory10[0])
-    .style('cursor', 'pointer')
     .on('mouseover', function (event, d) {
       tooltip.transition().duration(150).style('opacity', 1)
       tooltip.html(`${d.length} vehicles in the ${d.x0}-${d.x1} range`)
         .style('left', (event.pageX + 12) + 'px')
         .style('top', (event.pageY - 28) + 'px')
+
+      d3.select(this)
+        .attr('stroke', '#000')
+        .attr('stroke-width', 1.5)
     })
     .on('mousemove', function (event) {
       mouseMove(tooltip, event)
     })
     .on('mouseout', function () {
       tooltip.transition().duration(200).style('opacity', 0)
+      d3.select(this).attr('stroke', null)
     })
 
   chartGroup.append('text')
