@@ -10,8 +10,7 @@
 </head>
 
 <body>
-<h1>Fuel Efficiency Data (2017)</h1>
-<div style="width: 800px; height: 500px;">
+<div style="width: 800px; height: 1000px;">
   <h2 id="scene-title">Average MPG by Fuel Type</h2>
   <div id="nav-buttons" class="nav-container">
     <button id="prev-btn" class="nav-btn" onclick="drawPrevious()">Prev</button>
@@ -31,6 +30,11 @@
   </div>
 
   <div id="tooltip"></div>
+
+  <div id="hover-prompt">
+    <strong>Hover over chart elements for further details.</strong><br>
+    <button onclick="hideHoverPrompt()">Got It</button>
+  </div>
   <div>
     <p>
       <i>For more information on MPG calculation for electric vehicles, see:</i>

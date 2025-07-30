@@ -12,10 +12,6 @@ svg {
     border: 1px solid #ddd;
 }
 
-.bar {
-    /*fill: #1F77B4FF;*/
-}
-
 .axis-label {
     font-size: 14px;
     font-weight: bold;
@@ -49,6 +45,23 @@ svg {
     opacity: 0;
     border-radius: 4px;
     box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+
+#hover-prompt {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    font-size: 16px;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    flex-direction: column;
+}
+
+#hover-prompt button {
+    background-color: #3fb59f;
+    color: white;
 }
 
 select {

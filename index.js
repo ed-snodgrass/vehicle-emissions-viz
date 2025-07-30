@@ -1,6 +1,6 @@
 let data = []
 let currentScene = 0
-// TODO Add prompt showing hover that user can dismiss. "Got It".
+let showHoverPrompt = true
 
 const svg = d3.select('#chart')
 
@@ -20,6 +20,11 @@ d3.csv('./assets/cars2017.csv').then(raw => {
   }))
   transitionScene(currentScene)
 })
+
+function hideHoverPrompt() {
+  showHoverPrompt = false
+  transitionScene(currentScene)
+}
 
 function transitionScene(index) {
   currentScene = index
@@ -60,6 +65,17 @@ function transitionScene(index) {
       d3.select(`#next-btn`).attr('disabled', true)
       drawInteractiveExploration()
       break
+  }
+  const hoverPrompt = d3.select('#hover-prompt')
+  if (showHoverPrompt) {
+    hoverPrompt
+      .style('display', 'flex')
+      .style('left', '380px')
+      .style('top', '380px')
+      .style('opacity', showHoverPrompt ? 1 : 0)
+  } else {
+    hoverPrompt.style('opacity', 0)
+      .style('display', 'none')
   }
 }
 
@@ -131,8 +147,6 @@ function drawOverview() {
         <strong>${d.Fuel}</strong><br>
         Avg MPG: ${d.MeanMPG.toFixed(1)}
       `)
-      tooltip
-        .html(`<strong>${d.Fuel}</strong><br>Avg MPG: ${d.MeanMPG.toFixed(1)}`)
       d3.select(this)
         .attr('stroke', '#000')
         .attr('stroke-width', 1.5)
