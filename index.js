@@ -316,12 +316,6 @@ function drawScatterplot() {
       .style('font-size', '14px')
 
   })
-
-  // legend.append('text')
-  //   .attr('x', 150)
-  //   .attr('y', 35)
-  //   .text('Click to filter')
-  //   .style('font-size', '14px')
 }
 
 function resetFilters() {
@@ -353,6 +347,7 @@ function updateDropdown(id, values) {
 }
 
 function updateHistogram() {
+  const resetButton = d3.select('#reset-filters-button')
   chartGroup.selectAll('*').remove()
   const tooltip = d3.select('#tooltip')
 
@@ -360,14 +355,19 @@ function updateHistogram() {
   const selectedFuelTypeOption = d3.select('#fuelSelect').property('value')
   const selectedCylinderOption = d3.select('#cylSelect').property('value')
   let filtered = data
-
+  if (selectedMakeOption === 'All' && selectedFuelTypeOption == 'All' && selectedCylinderOption == 'All') {
+    resetButton.attr('disabled', true)
+  }
   if (selectedMakeOption !== 'All') {
+    resetButton.attr('disabled', null)
     filtered = filtered.filter(d => d.Make === selectedMakeOption)
   }
   if (selectedFuelTypeOption !== 'All') {
+    resetButton.attr('disabled', null)
     filtered = filtered.filter(d => d.Fuel === selectedFuelTypeOption)
   }
   if (selectedCylinderOption !== 'All') {
+    resetButton.attr('disabled', null)
     filtered = filtered.filter(d => d.EngineCylinders.toString() === selectedCylinderOption.toString())
   }
 

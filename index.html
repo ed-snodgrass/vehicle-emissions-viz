@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Fuel Efficiency Data (2017)</title>
-  <!--  <script src="https://d3js.org/d3.v7.min.js"></script>-->
   <script src="./d3.v7.min.js"/>
   <script src="./index.js"></script>
   <link rel="stylesheet" href="styles.css"/>
@@ -26,7 +25,7 @@
     <label>Make: <select id="makeSelect"></select></label>
     <label>Fuel Type: <select id="fuelSelect"></select></label>
     <label>Cylinders: <select id="cylSelect"></select></label>
-    <button id="reset-filters-button" onclick="resetFilters()">Reset</button>
+    <button id="reset-filters-button" onclick="resetFilters()" disabled>Reset</button>
   </div>
 
   <div id="tooltip"></div>
